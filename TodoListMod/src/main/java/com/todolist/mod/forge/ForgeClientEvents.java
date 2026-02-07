@@ -4,14 +4,16 @@ import com.todolist.mod.TodoListMod;
 import com.todolist.mod.client.ClientTodoManager;
 import com.todolist.mod.client.KeyBindings;
 import com.todolist.mod.client.gui.HudEditScreen;
+import com.todolist.mod.client.gui.InventoryResourceOverlay;
 import com.todolist.mod.client.gui.TodoHudOverlay;
 import com.todolist.mod.client.gui.TodoScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
@@ -67,6 +69,17 @@ public class ForgeClientEvents {
         @SubscribeEvent
         public static void onPlayerLeaveServer(ClientPlayerNetworkEvent.LoggingOut event) {
             ClientTodoManager.onDisconnect();
+        }
+
+        @SubscribeEvent
+        public static void onScreenRender(ScreenEvent.Render.Post event) {
+            if (event.getScreen() instanceof AbstractContainerScreen<?>) {
+                Minecraft mc = Minecraft.getInstance();
+                InventoryResourceOverlay.render(event.getGuiGraphics(),
+                        mc.getWindow().getGuiScaledWidth(),
+                        mc.getWindow().getGuiScaledHeight(),
+                        event.getMouseX(), event.getMouseY());
+            }
         }
     }
 }

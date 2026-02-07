@@ -3,6 +3,7 @@ package com.todolist.mod.client;
 import com.todolist.mod.TodoListMod;
 import com.todolist.mod.common.data.TodoSerializer;
 import com.todolist.mod.common.model.Category;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoList;
 import com.todolist.mod.common.model.TodoVisibility;
@@ -58,8 +59,8 @@ public class ClientTodoManager {
 
     // --- Send to server ---
 
-    public static void addTodo(String text, String category, TodoVisibility visibility, String itemId) {
-        ForgeNetworkHandler.sendToServer(new AddTodoPacket(text, category, visibility, itemId));
+    public static void addTodo(String text, String category, TodoVisibility visibility, List<ResourceRequirement> resources) {
+        ForgeNetworkHandler.sendToServer(new AddTodoPacket(text, category, visibility, resources));
     }
 
     public static void toggleTodo(UUID todoId) {
@@ -78,8 +79,8 @@ public class ClientTodoManager {
         ForgeNetworkHandler.sendToServer(new ShareTodoPacket(todoId, visibility));
     }
 
-    public static void editTodo(UUID todoId, String text, String category, TodoVisibility visibility, List<String> requiredItems) {
-        ForgeNetworkHandler.sendToServer(new EditTodoPacket(todoId, text, category, visibility, requiredItems));
+    public static void editTodo(UUID todoId, String text, String category, TodoVisibility visibility, List<ResourceRequirement> resources) {
+        ForgeNetworkHandler.sendToServer(new EditTodoPacket(todoId, text, category, visibility, resources));
     }
 
     public static void reorderTodo(UUID todoId, int newSortOrder) {

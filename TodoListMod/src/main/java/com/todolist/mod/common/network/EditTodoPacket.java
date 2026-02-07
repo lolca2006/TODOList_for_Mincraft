@@ -1,5 +1,6 @@
 package com.todolist.mod.common.network;
 
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoVisibility;
 import com.todolist.mod.server.data.ServerTodoManager;
 import net.minecraft.network.FriendlyByteBuf;
@@ -16,14 +17,14 @@ public class EditTodoPacket {
     private final String text;
     private final String category;
     private final TodoVisibility visibility;
-    private final List<String> requiredItems;
+    private final List<ResourceRequirement> resources;
 
-    public EditTodoPacket(UUID todoId, String text, String category, TodoVisibility visibility, List<String> requiredItems) {
+    public EditTodoPacket(UUID todoId, String text, String category, TodoVisibility visibility, List<ResourceRequirement> resources) {
         this.todoId = todoId;
         this.text = text;
         this.category = category;
         this.visibility = visibility;
-        this.requiredItems = requiredItems != null ? requiredItems : new ArrayList<>();
+        this.resources = resources != null ? resources : new ArrayList<>();
     }
 
     public static void encode(EditTodoPacket msg, FriendlyByteBuf buf) {
@@ -31,9 +32,11 @@ public class EditTodoPacket {
         buf.writeUtf(msg.text);
         buf.writeUtf(msg.category);
         buf.writeEnum(msg.visibility);
-        buf.writeInt(msg.requiredItems.size());
-        for (String item : msg.requiredItems) {
-            buf.writeUtf(item);
+        buf.writeInt(msg.resources.size());
+        for (ResourceRequirement req : msg.resources) {
+            buf.writeUtf(req.getItemId());
+            buf.writeInt(req.getCount());
+            buf.writeBoolean(req.isCollected());
         }
     }
 
@@ -43,18 +46,21 @@ public class EditTodoPacket {
         String category = buf.readUtf();
         TodoVisibility vis = buf.readEnum(TodoVisibility.class);
         int count = buf.readInt();
-        List<String> items = new ArrayList<>();
+        List<ResourceRequirement> resources = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            items.add(buf.readUtf());
+            String itemId = buf.readUtf();
+            int itemCount = buf.readInt();
+            boolean collected = buf.readBoolean();
+            resources.add(new ResourceRequirement(itemId, itemCount, collected));
         }
-        return new EditTodoPacket(id, text, category, vis, items);
+        return new EditTodoPacket(id, text, category, vis, resources);
     }
 
     public static void handle(EditTodoPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null) {
-                ServerTodoManager.editTodo(player, msg.todoId, msg.text, msg.category, msg.visibility, msg.requiredItems);
+                ServerTodoManager.editTodo(player, msg.todoId, msg.text, msg.category, msg.visibility, msg.resources);
             }
         });
         ctx.get().setPacketHandled(true);

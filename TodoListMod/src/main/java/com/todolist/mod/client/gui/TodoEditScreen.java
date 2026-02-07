@@ -2,6 +2,7 @@ package com.todolist.mod.client.gui;
 
 import com.todolist.mod.client.ClientTodoManager;
 import com.todolist.mod.common.model.Category;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoVisibility;
 import net.minecraft.client.gui.GuiGraphics;
@@ -15,6 +16,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TodoEditScreen extends Screen {
     private final Screen parentScreen;
@@ -22,11 +24,11 @@ public class TodoEditScreen extends Screen {
     private EditBox textInput;
     private String selectedCategory;
     private TodoVisibility selectedVisibility;
-    private final List<String> requiredItems;
+    private final List<ResourceRequirement> resources;
     private int itemScrollOffset = 0;
 
     private int panelLeft, panelTop, panelRight, panelBottom;
-    private static final int PANEL_W = 300, PANEL_H = 240;
+    private static final int PANEL_W = 300, PANEL_H = 260;
 
     public TodoEditScreen(Screen parent, TodoItem item) {
         super(Component.literal("Edit Todo"));
@@ -34,7 +36,9 @@ public class TodoEditScreen extends Screen {
         this.item = item;
         this.selectedCategory = item.getCategory();
         this.selectedVisibility = item.getVisibility();
-        this.requiredItems = new ArrayList<>(item.getRequiredItems());
+        this.resources = item.getResources().stream()
+                .map(ResourceRequirement::copy)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override
@@ -77,20 +81,30 @@ public class TodoEditScreen extends Screen {
                     btn.setMessage(Component.literal(selectedVisibility == TodoVisibility.PRIVATE ? "Private" : "Shared"));
                 }).bounds(panelLeft + 10, visY, 60, 16).build());
 
-        // Add item button
-        this.addRenderableWidget(Button.builder(Component.literal("+ Add Item"), btn -> {
-            this.minecraft.setScreen(new ItemPickerScreen(this, itemId -> {
-                if (itemId != null && !requiredItems.contains(itemId)) {
-                    requiredItems.add(itemId);
+        // Add resource button -> opens ResourcePickerScreen
+        this.addRenderableWidget(Button.builder(Component.literal("+ Resources"), btn -> {
+            this.minecraft.setScreen(new ResourcePickerScreen(this, newResources -> {
+                for (ResourceRequirement req : newResources) {
+                    boolean merged = false;
+                    for (ResourceRequirement existing : resources) {
+                        if (existing.getItemId().equals(req.getItemId())) {
+                            existing.setCount(existing.getCount() + req.getCount());
+                            merged = true;
+                            break;
+                        }
+                    }
+                    if (!merged) {
+                        resources.add(req.copy());
+                    }
                 }
             }));
-        }).bounds(panelLeft + 80, visY, 70, 16).build());
+        }).bounds(panelLeft + 80, visY, 80, 16).build());
 
         // Save button
         this.addRenderableWidget(Button.builder(Component.literal("Save"), btn -> {
             String newText = textInput.getValue().trim();
             if (!newText.isEmpty()) {
-                ClientTodoManager.editTodo(item.getId(), newText, selectedCategory, selectedVisibility, requiredItems);
+                ClientTodoManager.editTodo(item.getId(), newText, selectedCategory, selectedVisibility, resources);
             }
             this.minecraft.setScreen(parentScreen);
         }).bounds(panelLeft + 10, panelBottom - 28, 60, 18).build());
@@ -121,39 +135,65 @@ public class TodoEditScreen extends Screen {
         graphics.drawString(this.font, "Category:", panelLeft + 10, panelTop + 50, 0xFFAAAAAA, false);
         graphics.drawString(this.font, "Visibility:", panelLeft + 10, panelTop + 88, 0xFFAAAAAA, false);
 
-        // Required items section
+        // Resources section
         int itemsY = panelTop + 118;
-        graphics.drawString(this.font, "Required Items:", panelLeft + 10, itemsY, 0xFFAAAAAA, false);
-        itemsY += 12;
+        graphics.drawString(this.font, "Resources (" + resources.size() + "):", panelLeft + 10, itemsY, 0xFFAAAAAA, false);
+        itemsY += 14;
 
-        int maxVisible = 3;
-        int itemSize = 20;
-        for (int i = itemScrollOffset; i < Math.min(requiredItems.size(), itemScrollOffset + maxVisible * 9); i++) {
-            int col = (i - itemScrollOffset) % 9;
-            int row = (i - itemScrollOffset) / 9;
-            int ix = panelLeft + 10 + col * itemSize;
-            int iy = itemsY + row * itemSize;
+        int maxVisible = 5;
+        for (int i = itemScrollOffset; i < Math.min(resources.size(), itemScrollOffset + maxVisible); i++) {
+            ResourceRequirement req = resources.get(i);
+            int iy = itemsY + (i - itemScrollOffset) * 18;
 
             try {
-                var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(requiredItems.get(i)));
+                var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(req.getItemId()));
                 if (regItem != null) {
-                    boolean hovered = mouseX >= ix && mouseX < ix + itemSize && mouseY >= iy && mouseY < iy + itemSize;
-                    graphics.fill(ix, iy, ix + itemSize - 1, iy + itemSize - 1, hovered ? 0x55FF4444 : 0x22FFFFFF);
-                    graphics.renderItem(new ItemStack(regItem), ix + 2, iy + 2);
-                    if (hovered) {
-                        graphics.renderTooltip(this.font, Component.literal("Click to remove: " + requiredItems.get(i)), mouseX, mouseY);
+                    ItemStack stack = new ItemStack(regItem);
+
+                    // Row background
+                    boolean rowHovered = mouseX >= panelLeft + 10 && mouseX <= panelRight - 10 && mouseY >= iy && mouseY < iy + 16;
+                    if (rowHovered) {
+                        graphics.fill(panelLeft + 10, iy, panelRight - 10, iy + 16, 0x22FFFFFF);
+                    }
+
+                    // Item icon (half scale)
+                    graphics.pose().pushPose();
+                    graphics.pose().scale(0.75f, 0.75f, 1.0f);
+                    graphics.renderItem(stack, (int)((panelLeft + 12) / 0.75f), (int)((iy) / 0.75f));
+                    graphics.pose().popPose();
+
+                    // Item name
+                    String name = stack.getHoverName().getString();
+                    if (name.length() > 22) name = name.substring(0, 20) + "..";
+                    graphics.drawString(this.font, name, panelLeft + 28, iy + 4, 0xFFDDDDDD, false);
+
+                    // Count
+                    String countStr = "x" + req.getCount();
+                    graphics.drawString(this.font, countStr, panelRight - 55, iy + 4, 0xFFFFFF00, false);
+
+                    // Remove button
+                    int removeX = panelRight - 22;
+                    boolean rmHovered = mouseX >= removeX && mouseX <= removeX + 12 && mouseY >= iy + 2 && mouseY <= iy + 14;
+                    graphics.drawString(this.font, "\u00D7", removeX + 2, iy + 4,
+                            rmHovered ? 0xFFFF6666 : 0xFFAA4444, false);
+
+                    // Tooltip on hover
+                    if (rowHovered) {
+                        graphics.renderTooltip(this.font,
+                                Component.literal(req.getItemId() + " x" + req.getCount()), mouseX, mouseY);
                     }
                 }
             } catch (Exception ignored) {}
         }
 
-        if (requiredItems.isEmpty()) {
-            graphics.drawString(this.font, "No items added yet", panelLeft + 10, itemsY + 6, 0xFF666666, false);
+        if (resources.isEmpty()) {
+            graphics.drawString(this.font, "No resources added yet", panelLeft + 10, itemsY + 6, 0xFF666666, false);
         }
 
         // Created by info
         if (item.getCreatedByName() != null) {
-            graphics.drawString(this.font, "By: " + item.getCreatedByName(), panelRight - this.font.width("By: " + item.getCreatedByName()) - 10, panelTop + 88, 0xFF888888, false);
+            String byText = "By: " + item.getCreatedByName();
+            graphics.drawString(this.font, byText, panelRight - this.font.width(byText) - 10, panelTop + 88, 0xFF888888, false);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -161,16 +201,16 @@ public class TodoEditScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // Check item removal clicks
-        int itemsY = panelTop + 130;
-        int itemSize = 20;
-        for (int i = itemScrollOffset; i < Math.min(requiredItems.size(), itemScrollOffset + 27); i++) {
-            int col = (i - itemScrollOffset) % 9;
-            int row = (i - itemScrollOffset) / 9;
-            int ix = panelLeft + 10 + col * itemSize;
-            int iy = itemsY + row * itemSize;
-            if (mouseX >= ix && mouseX < ix + itemSize && mouseY >= iy && mouseY < iy + itemSize) {
-                requiredItems.remove(i);
+        int itemsY = panelTop + 132;
+        int maxVisible = 5;
+
+        for (int i = itemScrollOffset; i < Math.min(resources.size(), itemScrollOffset + maxVisible); i++) {
+            int iy = itemsY + (i - itemScrollOffset) * 18;
+
+            // Remove button click
+            int removeX = panelRight - 22;
+            if (mouseX >= removeX && mouseX <= removeX + 12 && mouseY >= iy + 2 && mouseY <= iy + 14) {
+                resources.remove(i);
                 return true;
             }
         }
@@ -179,8 +219,8 @@ public class TodoEditScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (delta > 0 && itemScrollOffset > 0) itemScrollOffset -= 9;
-        else if (delta < 0) itemScrollOffset += 9;
+        if (delta > 0 && itemScrollOffset > 0) itemScrollOffset--;
+        else if (delta < 0 && itemScrollOffset < resources.size() - 5) itemScrollOffset++;
         return true;
     }
 

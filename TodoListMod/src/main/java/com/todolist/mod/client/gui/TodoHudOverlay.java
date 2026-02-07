@@ -1,6 +1,7 @@
 package com.todolist.mod.client.gui;
 
 import com.todolist.mod.client.ClientTodoManager;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoVisibility;
 import com.todolist.mod.forge.ForgeConfigHandler;
@@ -143,24 +144,33 @@ public class TodoHudOverlay {
             }
             curX += 11;
 
-            // --- Required item icons (first 2, mini scale) ---
-            List<String> reqItems = item.getRequiredItems();
-            if (!reqItems.isEmpty()) {
-                int maxIcons = Math.min(reqItems.size(), 2);
+            // --- Resource icons with counts (first 2, mini scale) ---
+            List<ResourceRequirement> resources = item.getResources();
+            if (!resources.isEmpty()) {
+                int maxIcons = Math.min(resources.size(), 2);
                 for (int j = 0; j < maxIcons; j++) {
+                    ResourceRequirement req = resources.get(j);
                     try {
-                        var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(reqItems.get(j)));
+                        var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(req.getItemId()));
                         if (regItem != null) {
                             graphics.pose().pushPose();
                             graphics.pose().scale(0.5f, 0.5f, 1.0f);
                             graphics.renderItem(new ItemStack(regItem),
                                     (int)(curX / 0.5f), (int)((y) / 0.5f));
                             graphics.pose().popPose();
-                            curX += 9;
+                            // Show count next to icon
+                            if (req.getCount() > 1) {
+                                String cnt = req.getCount() > 99 ? "99+" : String.valueOf(req.getCount());
+                                graphics.pose().pushPose();
+                                graphics.pose().scale(0.5f, 0.5f, 1.0f);
+                                graphics.drawString(font, cnt, (int)((curX + 5) / 0.5f), (int)((y + 6) / 0.5f), 0xFFFFFF00, true);
+                                graphics.pose().popPose();
+                            }
+                            curX += 12;
                         }
                     } catch (Exception ignored) {}
                 }
-                if (reqItems.size() > 2) {
+                if (resources.size() > 2) {
                     curX += 1;
                 }
             }

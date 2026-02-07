@@ -2,6 +2,7 @@ package com.todolist.mod.server.data;
 
 import com.todolist.mod.TodoListMod;
 import com.todolist.mod.common.data.TodoSerializer;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoList;
 import com.todolist.mod.common.model.TodoVisibility;
@@ -46,14 +47,14 @@ public class ServerTodoManager {
 
     // --- CRUD Operations ---
 
-    public static synchronized void addTodo(ServerPlayer player, String text, String category, TodoVisibility visibility, String itemId) {
+    public static synchronized void addTodo(ServerPlayer player, String text, String category, TodoVisibility visibility, List<ResourceRequirement> resources) {
         if (text == null || text.trim().isEmpty()) return;
 
         TodoItem item = new TodoItem(text.trim(), player.getUUID(), player.getGameProfile().getName());
         item.setCategory(category != null ? category : "General");
         item.setVisibility(visibility);
-        if (itemId != null && !itemId.isEmpty()) {
-            item.setItemId(itemId);
+        if (resources != null && !resources.isEmpty()) {
+            item.setResources(resources);
         }
 
         if (visibility == TodoVisibility.SHARED) {
@@ -171,14 +172,14 @@ public class ServerTodoManager {
         }
     }
 
-    public static synchronized void editTodo(ServerPlayer player, UUID todoId, String text, String category, TodoVisibility newVisibility, List<String> requiredItems) {
+    public static synchronized void editTodo(ServerPlayer player, UUID todoId, String text, String category, TodoVisibility newVisibility, List<ResourceRequirement> resources) {
         TodoItem item = findTodo(player.getUUID(), todoId);
         if (item == null) return;
         if (!canModify(player, item)) return;
 
         item.setText(text);
         item.setCategory(category);
-        item.setRequiredItems(requiredItems);
+        item.setResources(resources);
 
         TodoVisibility oldVisibility = item.getVisibility();
         if (!oldVisibility.equals(newVisibility) && player.getUUID().equals(item.getCreatedBy())) {

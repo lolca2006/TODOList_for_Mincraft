@@ -22,6 +22,8 @@ public class ForgeConfigHandler {
         public final ForgeConfigSpec.BooleanValue showCompletedInHud;
         public final ForgeConfigSpec.BooleanValue playCompletionSound;
         public final ForgeConfigSpec.ConfigValue<String> hudActiveCategory;
+        public final ForgeConfigSpec.BooleanValue inventoryOverlayEnabled;
+        public final ForgeConfigSpec.IntValue inventoryOverlayMaxItems;
 
         ClientConfig(ForgeConfigSpec.Builder builder) {
             builder.comment("HUD Overlay Settings").push("hud");
@@ -58,6 +60,17 @@ public class ForgeConfigHandler {
             hudActiveCategory = builder
                     .comment("Active category filter in HUD (empty = all)")
                     .define("activeCategory", "");
+
+            builder.pop();
+
+            builder.comment("Inventory Overlay Settings").push("inventoryOverlay");
+
+            inventoryOverlayEnabled = builder
+                    .comment("Show resource overlay when inventory is open")
+                    .define("enabled", true);
+            inventoryOverlayMaxItems = builder
+                    .comment("Maximum resources to show in inventory overlay")
+                    .defineInRange("maxItems", 15, 1, 50);
 
             builder.pop();
         }

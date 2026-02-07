@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.todolist.mod.common.model.Category;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoList;
 
@@ -15,6 +16,7 @@ public class TodoSerializer {
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .registerTypeAdapter(UUID.class, new UUIDTypeAdapter())
+            .registerTypeAdapter(ResourceRequirement.class, new ResourceRequirementTypeAdapter())
             .create();
 
     public static String itemsToJson(List<TodoItem> items) {

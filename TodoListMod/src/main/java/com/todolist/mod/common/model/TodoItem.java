@@ -3,6 +3,7 @@ package com.todolist.mod.common.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class TodoItem {
     private UUID id;
@@ -18,7 +19,7 @@ public class TodoItem {
     private long createdAt;
     private long completedAt;
     private TodoVisibility visibility;
-    private List<String> requiredItems;
+    private List<ResourceRequirement> resources;
     private int sortOrder;
 
     public TodoItem() {
@@ -26,7 +27,7 @@ public class TodoItem {
         this.createdAt = System.currentTimeMillis();
         this.category = "General";
         this.visibility = TodoVisibility.PRIVATE;
-        this.requiredItems = new ArrayList<>();
+        this.resources = new ArrayList<>();
         this.sortOrder = 0;
     }
 
@@ -66,22 +67,60 @@ public class TodoItem {
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 
-    public List<String> getRequiredItems() {
-        if (requiredItems == null) requiredItems = new ArrayList<>();
-        return requiredItems;
-    }
-    public void setRequiredItems(List<String> items) { this.requiredItems = items != null ? new ArrayList<>(items) : new ArrayList<>(); }
-    public void addRequiredItem(String itemId) { getRequiredItems().add(itemId); }
-    public void removeRequiredItem(String itemId) { getRequiredItems().remove(itemId); }
+    // --- Resource management ---
 
-    // Legacy compat
-    public String getItemId() {
-        return requiredItems != null && !requiredItems.isEmpty() ? requiredItems.get(0) : null;
+    public List<ResourceRequirement> getResources() {
+        if (resources == null) resources = new ArrayList<>();
+        return resources;
     }
+
+    public void setResources(List<ResourceRequirement> resources) {
+        this.resources = resources != null ? new ArrayList<>(resources) : new ArrayList<>();
+    }
+
+    public void addResource(String itemId, int count) {
+        // Merge with existing if same item
+        for (ResourceRequirement req : getResources()) {
+            if (req.getItemId().equals(itemId)) {
+                req.setCount(req.getCount() + count);
+                return;
+            }
+        }
+        getResources().add(new ResourceRequirement(itemId, count));
+    }
+
+    public void removeResource(String itemId) {
+        getResources().removeIf(r -> r.getItemId().equals(itemId));
+    }
+
+    public ResourceRequirement getResourceByItemId(String itemId) {
+        return getResources().stream()
+                .filter(r -> r.getItemId().equals(itemId))
+                .findFirst().orElse(null);
+    }
+
+    public int getTotalResourceCount() {
+        return getResources().stream().mapToInt(ResourceRequirement::getCount).sum();
+    }
+
+    // --- Legacy compatibility (for old code that used String lists) ---
+
+    public List<String> getRequiredItems() {
+        return getResources().stream()
+                .map(ResourceRequirement::getItemId)
+                .collect(Collectors.toList());
+    }
+
+    public String getItemId() {
+        return resources != null && !resources.isEmpty() ? resources.get(0).getItemId() : null;
+    }
+
     public void setItemId(String itemId) {
-        if (requiredItems == null) requiredItems = new ArrayList<>();
-        requiredItems.clear();
-        if (itemId != null && !itemId.isEmpty()) requiredItems.add(itemId);
+        if (resources == null) resources = new ArrayList<>();
+        resources.clear();
+        if (itemId != null && !itemId.isEmpty()) {
+            resources.add(new ResourceRequirement(itemId, 1));
+        }
     }
 
     public void toggleCompleted(UUID playerUuid, String playerName) {

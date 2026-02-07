@@ -69,13 +69,11 @@ public class TodoScreen extends Screen {
         }).bounds(panelRight - 52, panelTop + 18, 16, 16).build();
         this.addRenderableWidget(settingsButton);
 
-        // Item picker button
-        Button itemPickerButton = Button.builder(Component.literal("\u25A6"), btn -> {
-            this.minecraft.setScreen(new ItemPickerScreen(this, itemId -> {
-                // Will be used when adding items
-            }));
+        // Import button (Litematica etc.)
+        Button importButton = Button.builder(Component.literal("\u2B07"), btn -> {
+            this.minecraft.setScreen(new ImportScreen(this));
         }).bounds(panelRight - 32, panelTop + 18, 16, 16).build();
-        this.addRenderableWidget(itemPickerButton);
+        this.addRenderableWidget(importButton);
 
         // Todo list widget (scrollable)
         int listTop = panelTop + 58;
@@ -111,7 +109,7 @@ public class TodoScreen extends Screen {
     private void addNewTask() {
         String text = newTaskInput.getValue().trim();
         if (!text.isEmpty()) {
-            ClientTodoManager.addTodo(text, currentCategory, currentVisibility, null);
+            ClientTodoManager.addTodo(text, currentCategory, currentVisibility, new java.util.ArrayList<>());
             newTaskInput.setValue("");
             // List will update on next sync from server
         }

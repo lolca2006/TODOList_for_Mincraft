@@ -2,6 +2,7 @@ package com.todolist.mod.client.gui.widgets;
 
 import com.todolist.mod.client.ClientTodoManager;
 import com.todolist.mod.client.gui.TodoEditScreen;
+import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoVisibility;
 import net.minecraft.client.Minecraft;
@@ -36,46 +37,58 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
         int bgColor = isHovered ? 0x44FFFFFF : (index % 2 == 0 ? 0x22FFFFFF : 0x11FFFFFF);
         graphics.fill(left, top, left + width, top + height, bgColor);
 
-        // --- Checkbox (nicer design) ---
-        int checkX = left + 4;
+        // Offset for drag handle area
+        int contentLeft = left + TodoListWidget.DRAG_HANDLE_WIDTH;
+
+        // --- Checkbox ---
+        int checkX = contentLeft + 2;
         int checkY = top + 3;
         int checkSize = 10;
 
         if (item.isCompleted()) {
-            // Filled green rounded checkbox
             graphics.fill(checkX, checkY, checkX + checkSize, checkY + checkSize, 0xFF2D8B2D);
             graphics.fill(checkX + 1, checkY + 1, checkX + checkSize - 1, checkY + checkSize - 1, 0xFF3CBB3C);
-            // Draw a nice checkmark using lines
+            // Checkmark
             graphics.fill(checkX + 2, checkY + 5, checkX + 4, checkY + 8, 0xFFFFFFFF);
             graphics.fill(checkX + 4, checkY + 6, checkX + 8, checkY + 8, 0xFFFFFFFF);
             graphics.fill(checkX + 6, checkY + 3, checkX + 8, checkY + 7, 0xFFFFFFFF);
         } else {
-            // Empty checkbox with border
             graphics.fill(checkX, checkY, checkX + checkSize, checkY + checkSize, 0xFF555555);
             graphics.fill(checkX + 1, checkY + 1, checkX + checkSize - 1, checkY + checkSize - 1, 0xFF1A1A1A);
         }
 
-        int textX = checkX + checkSize + 5;
+        int textX = checkX + checkSize + 4;
 
-        // --- Required item icons (mini) ---
-        List<String> reqItems = item.getRequiredItems();
-        if (!reqItems.isEmpty()) {
-            int maxIcons = Math.min(reqItems.size(), 3);
+        // --- Resource icons with counts ---
+        List<ResourceRequirement> resources = item.getResources();
+        if (!resources.isEmpty()) {
+            int maxIcons = Math.min(resources.size(), 3);
             for (int i = 0; i < maxIcons; i++) {
+                ResourceRequirement req = resources.get(i);
                 try {
-                    var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(reqItems.get(i)));
+                    var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(req.getItemId()));
                     if (regItem != null) {
                         graphics.pose().pushPose();
                         graphics.pose().scale(0.5f, 0.5f, 1.0f);
                         graphics.renderItem(new ItemStack(regItem), (int)(textX / 0.5f), (int)((top + 1) / 0.5f));
                         graphics.pose().popPose();
-                        textX += 10;
+                        // Draw count overlay
+                        if (req.getCount() > 1) {
+                            String countStr = req.getCount() > 999 ? "999+" : String.valueOf(req.getCount());
+                            graphics.pose().pushPose();
+                            graphics.pose().scale(0.5f, 0.5f, 1.0f);
+                            int cx = (int)((textX + 5) / 0.5f);
+                            int cy = (int)((top + 7) / 0.5f);
+                            graphics.drawString(font, countStr, cx, cy, 0xFFFFFF00, true);
+                            graphics.pose().popPose();
+                        }
+                        textX += 12;
                     }
                 } catch (Exception ignored) {}
             }
-            if (reqItems.size() > 3) {
-                graphics.drawString(font, "+" + (reqItems.size() - 3), textX, top + 4, 0xFF888888, false);
-                textX += font.width("+" + (reqItems.size() - 3)) + 2;
+            if (resources.size() > 3) {
+                graphics.drawString(font, "+" + (resources.size() - 3), textX, top + 4, 0xFF888888, false);
+                textX += font.width("+" + (resources.size() - 3)) + 2;
             }
         }
 
@@ -103,7 +116,7 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
             graphics.drawString(font, displayText, textX, top + 4, textColor, false);
         }
 
-        // --- Player info line (second row) ---
+        // --- Player info line ---
         if (item.getVisibility() == TodoVisibility.SHARED) {
             String info = "";
             if (item.isCompleted() && item.getCompletedByName() != null) {
@@ -118,14 +131,14 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
             }
         }
 
-        // --- Edit button [E] ---
+        // --- Edit button ---
         int editX = left + width - 34;
         int editY = top + 3;
         boolean editHovered = mouseX >= editX && mouseX <= editX + 12 && mouseY >= editY && mouseY <= editY + 10;
         graphics.fill(editX, editY, editX + 12, editY + 10, editHovered ? 0x66FFFFFF : 0x22FFFFFF);
         graphics.drawString(font, "\u270E", editX + 2, editY + 1, editHovered ? 0xFFFFFFFF : 0xFFAAAAAA, false);
 
-        // --- Delete button [X] ---
+        // --- Delete button ---
         int delX = left + width - 18;
         int delY = top + 3;
         boolean delHovered = mouseX >= delX && mouseX <= delX + 12 && mouseY >= delY && mouseY <= delY + 10;
@@ -143,17 +156,17 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
         int left = parent.getRowLeft();
         int width = parent.getRowWidth();
         int top = parent.getRowTop(parent.children().indexOf(this));
-        int height = parent.getItemHeight();
+        int contentLeft = left + TodoListWidget.DRAG_HANDLE_WIDTH;
 
         // Checkbox click
-        int checkX = left + 4;
+        int checkX = contentLeft + 2;
         int checkY = top + 3;
         if (mouseX >= checkX && mouseX <= checkX + 10 && mouseY >= checkY && mouseY <= checkY + 10) {
             ClientTodoManager.toggleTodo(item.getId());
             return true;
         }
 
-        // Edit button click
+        // Edit button
         int editX = left + width - 34;
         int editY = top + 3;
         if (mouseX >= editX && mouseX <= editX + 12 && mouseY >= editY && mouseY <= editY + 10) {
@@ -161,7 +174,7 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
             return true;
         }
 
-        // Delete click
+        // Delete button
         int delX = left + width - 18;
         int delY = top + 3;
         if (mouseX >= delX && mouseX <= delX + 12 && mouseY >= delY && mouseY <= delY + 10) {
