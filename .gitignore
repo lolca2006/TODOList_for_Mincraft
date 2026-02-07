@@ -1,0 +1,20 @@
+# Build outputs
+TodoListMod/build/
+TodoListMod/.gradle/
+TodoListMod/run/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Temp files
+c
+
+# Claude
+.claude/
