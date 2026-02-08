@@ -5,6 +5,8 @@ import com.todolist.mod.common.model.Category;
 import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.common.model.TodoVisibility;
+import com.todolist.mod.integration.jei.JEIHelper;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -16,6 +18,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TodoEditScreen extends Screen {
@@ -29,6 +32,10 @@ public class TodoEditScreen extends Screen {
 
     private int panelLeft, panelTop, panelRight, panelBottom;
     private static final int PANEL_W = 300, PANEL_H = 260;
+
+    // Status message
+    private String statusMessage = null;
+    private long statusMessageTime = 0;
 
     public TodoEditScreen(Screen parent, TodoItem item) {
         super(Component.literal("Edit Todo"));
@@ -100,6 +107,28 @@ public class TodoEditScreen extends Screen {
             }));
         }).bounds(panelLeft + 80, visY, 80, 16).build());
 
+        // JEI button - opens ResourcePickerScreen with JEI features
+        if (JEIHelper.isJEILoaded()) {
+            this.addRenderableWidget(Button.builder(Component.literal("JEI +"), btn -> {
+                // Open ResourcePickerScreen (which has JEI integration)
+                this.minecraft.setScreen(new ResourcePickerScreen(this, newResources -> {
+                    for (ResourceRequirement req : newResources) {
+                        boolean merged = false;
+                        for (ResourceRequirement existing : resources) {
+                            if (existing.getItemId().equals(req.getItemId())) {
+                                existing.setCount(existing.getCount() + req.getCount());
+                                merged = true;
+                                break;
+                            }
+                        }
+                        if (!merged) {
+                            resources.add(req.copy());
+                        }
+                    }
+                }));
+            }).bounds(panelRight - 50, visY, 40, 16).build());
+        }
+
         // Save button
         this.addRenderableWidget(Button.builder(Component.literal("Save"), btn -> {
             String newText = textInput.getValue().trim();
@@ -121,6 +150,11 @@ public class TodoEditScreen extends Screen {
         }).bounds(panelRight - 70, panelBottom - 28, 60, 18).build());
     }
 
+    private void setStatus(String msg) {
+        statusMessage = msg;
+        statusMessageTime = System.currentTimeMillis();
+    }
+
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(graphics);
@@ -137,7 +171,17 @@ public class TodoEditScreen extends Screen {
 
         // Resources section
         int itemsY = panelTop + 118;
-        graphics.drawString(this.font, "Resources (" + resources.size() + "):", panelLeft + 10, itemsY, 0xFFAAAAAA, false);
+        String resLabel = "Resources (" + resources.size() + "):";
+        graphics.drawString(this.font, resLabel, panelLeft + 10, itemsY, 0xFFAAAAAA, false);
+
+        // Hint text
+        if (JEIHelper.isJEILoaded()) {
+            graphics.drawString(this.font, "R=Recipe  U=Uses  S=+Ingredients",
+                    panelLeft + 10 + this.font.width(resLabel) + 6, itemsY, 0xFF556655, false);
+        } else {
+            graphics.drawString(this.font, "S=+Recipe Ingredients",
+                    panelLeft + 10 + this.font.width(resLabel) + 6, itemsY, 0xFF556655, false);
+        }
         itemsY += 14;
 
         int maxVisible = 5;
@@ -177,10 +221,19 @@ public class TodoEditScreen extends Screen {
                     graphics.drawString(this.font, "\u00D7", removeX + 2, iy + 4,
                             rmHovered ? 0xFFFF6666 : 0xFFAA4444, false);
 
-                    // Tooltip on hover
+                    // Tooltip on hover with JEI hints
                     if (rowHovered) {
-                        graphics.renderTooltip(this.font,
-                                Component.literal(req.getItemId() + " x" + req.getCount()), mouseX, mouseY);
+                        List<Component> tooltip = new ArrayList<>();
+                        tooltip.add(stack.getHoverName());
+                        tooltip.add(Component.literal(req.getItemId() + " x" + req.getCount())
+                                .withStyle(ChatFormatting.GRAY));
+                        if (JEIHelper.isJEILoaded()) {
+                            tooltip.add(Component.literal("R: show recipe (JEI)").withStyle(ChatFormatting.GREEN));
+                            tooltip.add(Component.literal("U: show uses (JEI)").withStyle(ChatFormatting.GREEN));
+                        }
+                        tooltip.add(Component.literal("S: add recipe ingredients").withStyle(ChatFormatting.AQUA));
+                        tooltip.add(Component.literal("Click \u00D7 to remove").withStyle(ChatFormatting.RED));
+                        graphics.renderTooltip(this.font, tooltip, Optional.empty(), mouseX, mouseY);
                     }
                 }
             } catch (Exception ignored) {}
@@ -196,7 +249,92 @@ public class TodoEditScreen extends Screen {
             graphics.drawString(this.font, byText, panelRight - this.font.width(byText) - 10, panelTop + 88, 0xFF888888, false);
         }
 
+        // Status message (auto-fades after 3 seconds)
+        if (statusMessage != null) {
+            long age = System.currentTimeMillis() - statusMessageTime;
+            if (age < 3000) {
+                int alpha = age > 2000 ? (int)(255 * (1.0 - (age - 2000) / 1000.0)) : 255;
+                int color = (alpha << 24) | 0x44FF44;
+                graphics.drawCenteredString(this.font, statusMessage, this.width / 2, panelBottom - 42, color);
+            } else {
+                statusMessage = null;
+            }
+        }
+
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * Gets the resource index at the given mouse position, or -1 if none.
+     */
+    private int getResourceIndexAt(double mouseY) {
+        int itemsY = panelTop + 132;
+        int maxVisible = 5;
+        for (int i = itemScrollOffset; i < Math.min(resources.size(), itemScrollOffset + maxVisible); i++) {
+            int iy = itemsY + (i - itemScrollOffset) * 18;
+            if (mouseY >= iy && mouseY < iy + 16) return i;
+        }
+        return -1;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Get mouse position for hovered resource
+        double mx = this.minecraft.mouseHandler.xpos() * this.width / this.minecraft.getWindow().getWidth();
+        double my = this.minecraft.mouseHandler.ypos() * this.height / this.minecraft.getWindow().getHeight();
+
+        if (mx >= panelLeft + 10 && mx <= panelRight - 10) {
+            int hoveredIdx = getResourceIndexAt(my);
+            if (hoveredIdx >= 0 && hoveredIdx < resources.size()) {
+                ResourceRequirement req = resources.get(hoveredIdx);
+                var regItem = ForgeRegistries.ITEMS.getValue(new ResourceLocation(req.getItemId()));
+                if (regItem != null) {
+                    ItemStack stack = new ItemStack(regItem);
+
+                    // R = Show recipe in JEI
+                    if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_R) {
+                        if (JEIHelper.isJEILoaded()) {
+                            JEIHelper.showRecipesFor(stack);
+                            return true;
+                        }
+                    }
+
+                    // U = Show uses in JEI
+                    if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_U) {
+                        if (JEIHelper.isJEILoaded()) {
+                            JEIHelper.showUsesFor(stack);
+                            return true;
+                        }
+                    }
+
+                    // S = Add recipe ingredients to this todo's resources
+                    if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_S) {
+                        List<ResourceRequirement> ingredients = JEIHelper.getRecipeIngredients(req.getItemId());
+                        if (!ingredients.isEmpty()) {
+                            for (ResourceRequirement ing : ingredients) {
+                                boolean merged = false;
+                                for (ResourceRequirement existing : resources) {
+                                    if (existing.getItemId().equals(ing.getItemId())) {
+                                        existing.setCount(existing.getCount() + ing.getCount() * req.getCount());
+                                        merged = true;
+                                        break;
+                                    }
+                                }
+                                if (!merged) {
+                                    resources.add(new ResourceRequirement(ing.getItemId(), ing.getCount() * req.getCount()));
+                                }
+                            }
+                            setStatus("Added " + ingredients.size() + " ingredients for " + stack.getHoverName().getString());
+                        } else {
+                            setStatus("No recipe found for " + stack.getHoverName().getString());
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -222,6 +360,21 @@ public class TodoEditScreen extends Screen {
         if (delta > 0 && itemScrollOffset > 0) itemScrollOffset--;
         else if (delta < 0 && itemScrollOffset < resources.size() - 5) itemScrollOffset++;
         return true;
+    }
+
+    /**
+     * Called by JEI ghost ingredient handler when an item is dragged from JEI into this screen.
+     */
+    public void addResourceFromJEI(String itemId, int count) {
+        for (ResourceRequirement existing : resources) {
+            if (existing.getItemId().equals(itemId)) {
+                existing.setCount(existing.getCount() + count);
+                setStatus("Added +" + count + " to existing resource");
+                return;
+            }
+        }
+        resources.add(new ResourceRequirement(itemId, count));
+        setStatus("Added resource from JEI!");
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.todolist.mod.client.ClientTodoManager;
 import com.todolist.mod.common.model.ResourceRequirement;
 import com.todolist.mod.common.model.TodoItem;
 import com.todolist.mod.forge.ForgeConfigHandler;
+import com.todolist.mod.integration.jei.JEIHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -34,13 +35,18 @@ public class InventoryResourceOverlay {
         Font font = mc.font;
         int maxItems = ForgeConfigHandler.CLIENT.inventoryOverlayMaxItems.get();
 
-        // Position on right side of screen
+        // Position on right side of screen, but shift left if JEI overlay is visible
         int panelWidth = 160;
         int rowHeight = 16;
         int displayCount = Math.min(needed.size(), maxItems);
         int panelHeight = 16 + displayCount * rowHeight + 6;
         int panelX = screenWidth - panelWidth - 4;
         int panelY = 4;
+
+        // Shift left if JEI ingredient list is visible
+        if (JEIHelper.isJEIOverlayVisible()) {
+            panelX = Math.max(4, screenWidth - panelWidth - 175);
+        }
 
         // Get player inventory counts
         Map<String, Integer> playerInv = getPlayerInventory(mc);

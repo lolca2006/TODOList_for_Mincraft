@@ -209,7 +209,28 @@ public class ServerTodoManager {
         if (item == null) return;
         if (!canModify(player, item)) return;
 
-        item.setSortOrder(newSortOrder);
+        // Find which list contains this item and physically reorder it
+        TodoList targetList = null;
+        if (item.getVisibility() == TodoVisibility.SHARED) {
+            targetList = sharedList;
+        } else {
+            targetList = playerLists.get(player.getUUID());
+        }
+
+        if (targetList != null) {
+            List<TodoItem> items = targetList.getItems();
+            int fromIdx = items.indexOf(item);
+            if (fromIdx >= 0) {
+                items.remove(fromIdx);
+                int toIdx = Math.max(0, Math.min(newSortOrder, items.size()));
+                items.add(toIdx, item);
+                // Update all sortOrder values to match new positions
+                for (int i = 0; i < items.size(); i++) {
+                    items.get(i).setSortOrder(i);
+                }
+            }
+        }
+
         save(player.getUUID());
         saveShared();
         syncToPlayer(player);
