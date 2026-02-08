@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Build all modules
+        run: ./gradlew build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            forge/build/libs/*[!sources].jar
+            fabric/build/libs/*[!sources].jar
+
+      # Uncomment when API keys are configured as GitHub secrets:
+      # - name: Publish to Modrinth & CurseForge
+      #   run: ./gradlew modrinth curseforge
+      #   if: env.MODRINTH_TOKEN != ''
+      #   env:
+      #     MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      #     CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}

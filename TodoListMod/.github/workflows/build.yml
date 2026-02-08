@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, 'mc/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Build all modules
+        run: ./gradlew build
+
+      - name: Upload Forge JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: TodoListMod-Forge
+          path: forge/build/libs/*[!sources].jar
+
+      - name: Upload Fabric JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: TodoListMod-Fabric
+          path: fabric/build/libs/*[!sources].jar
