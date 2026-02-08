@@ -1,6 +1,8 @@
 plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
+    id 'com.modrinth.minotaur'
+    id 'net.darkhax.curseforgegradle'
 }
 
 dependencies {
@@ -38,4 +40,32 @@ loom {
             runDir("run")
         }
     }
+}
+
+// --- Publishing ---
+
+modrinth {
+    token = System.getenv("MODRINTH_TOKEN")
+    projectId = "todolistmod"
+    versionNumber = "${version}"
+    versionName = "Todo List Mod ${version} (Fabric)"
+    versionType = "release"
+    uploadFile = tasks.remapJar
+    gameVersions = [minecraft_version]
+    loaders = ["fabric"]
+    dependencies {
+        required.project "fabric-api"
+        optional.project "jei"
+    }
+    changelog = System.getenv("CHANGELOG") ?: "See GitHub release notes."
+}
+
+task curseforge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    apiToken = System.getenv("CURSEFORGE_TOKEN") ?: "none"
+    def mainFile = upload(System.getenv("CURSEFORGE_PROJECT_ID") ?: "0", tasks.remapJar)
+    mainFile.releaseType = "release"
+    mainFile.addGameVersion(minecraft_version)
+    mainFile.addModLoader("Fabric")
+    mainFile.changelog = System.getenv("CHANGELOG") ?: "See GitHub release notes."
+    mainFile.changelogType = "text"
 }

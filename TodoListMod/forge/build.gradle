@@ -1,6 +1,8 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev.legacyforge'
+    id 'com.modrinth.minotaur'
+    id 'net.darkhax.curseforgegradle'
 }
 
 legacyForge {
@@ -45,4 +47,31 @@ dependencies {
 
 jar {
     finalizedBy('reobfJar')
+}
+
+// --- Publishing ---
+
+modrinth {
+    token = System.getenv("MODRINTH_TOKEN")
+    projectId = "todolistmod"
+    versionNumber = "${version}"
+    versionName = "Todo List Mod ${version} (Forge)"
+    versionType = "release"
+    uploadFile = tasks.jar
+    gameVersions = [minecraft_version]
+    loaders = ["forge"]
+    dependencies {
+        optional.project "jei"
+    }
+    changelog = System.getenv("CHANGELOG") ?: "See GitHub release notes."
+}
+
+task curseforge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    apiToken = System.getenv("CURSEFORGE_TOKEN") ?: "none"
+    def mainFile = upload(System.getenv("CURSEFORGE_PROJECT_ID") ?: "0", tasks.jar)
+    mainFile.releaseType = "release"
+    mainFile.addGameVersion(minecraft_version)
+    mainFile.addModLoader("Forge")
+    mainFile.changelog = System.getenv("CHANGELOG") ?: "See GitHub release notes."
+    mainFile.changelogType = "text"
 }

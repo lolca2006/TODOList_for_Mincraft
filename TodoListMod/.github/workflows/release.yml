@@ -30,10 +30,15 @@ jobs:
             forge/build/libs/*[!sources].jar
             fabric/build/libs/*[!sources].jar
 
-      # Uncomment when API keys are configured as GitHub secrets:
-      # - name: Publish to Modrinth & CurseForge
-      #   run: ./gradlew modrinth curseforge
-      #   if: env.MODRINTH_TOKEN != ''
-      #   env:
-      #     MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-      #     CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+      - name: Publish to Modrinth
+        if: env.MODRINTH_TOKEN != ''
+        run: ./gradlew forge:modrinth fabric:modrinth
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+
+      - name: Publish to CurseForge
+        if: env.CURSEFORGE_TOKEN != ''
+        run: ./gradlew forge:curseforge fabric:curseforge
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_PROJECT_ID: ${{ secrets.CURSEFORGE_PROJECT_ID }}
