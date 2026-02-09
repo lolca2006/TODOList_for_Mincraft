@@ -154,7 +154,7 @@ public class TodoHudOverlay {
                         PlayerInfo playerInfo = mc.getConnection() != null ?
                                 mc.getConnection().getPlayerInfo(playerUuid) : null;
                         if (playerInfo != null) {
-                            ResourceLocation skinLocation = playerInfo.getSkinLocation();
+                            ResourceLocation skinLocation = playerInfo.getSkin().texture();
                             PlayerFaceRenderer.draw(graphics, skinLocation, curX, y, 8);
                             curX += 11;
                         }

@@ -105,7 +105,7 @@ public class SettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);
         graphics.fill(panelLeft, panelTop, panelRight, panelBottom, 0xDD111111);

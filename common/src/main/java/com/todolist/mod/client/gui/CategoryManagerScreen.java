@@ -78,7 +78,7 @@ public class CategoryManagerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);
@@ -129,9 +129,9 @@ public class CategoryManagerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (delta > 0 && scrollOffset > 0) scrollOffset--;
-        else if (delta < 0 && scrollOffset + 8 < categories.size()) scrollOffset++;
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
+        if (scrollDeltaY > 0 && scrollOffset > 0) scrollOffset--;
+        else if (scrollDeltaY < 0 && scrollOffset + 8 < categories.size()) scrollOffset++;
         return true;
     }
 

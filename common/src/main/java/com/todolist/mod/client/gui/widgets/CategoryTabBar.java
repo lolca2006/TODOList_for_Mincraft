@@ -93,9 +93,9 @@ public class CategoryTabBar extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
         if (this.isMouseOver(mouseX, mouseY)) {
-            scrollOffset = Math.max(0, scrollOffset - (int)(delta * 20));
+            scrollOffset = Math.max(0, scrollOffset - (int)(scrollDeltaY * 20));
             return true;
         }
         return false;

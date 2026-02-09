@@ -2,6 +2,7 @@ package com.todolist.mod.integration.litematica;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 
@@ -34,7 +35,7 @@ public class LitematicaImporter {
             throw new IllegalArgumentException("Not a .litematic file");
         }
 
-        CompoundTag root = NbtIo.readCompressed(file);
+        CompoundTag root = NbtIo.readCompressed(file.toPath(), NbtAccounter.unlimitedHeap());
         if (root == null) {
             throw new IllegalArgumentException("Could not read NBT data");
         }

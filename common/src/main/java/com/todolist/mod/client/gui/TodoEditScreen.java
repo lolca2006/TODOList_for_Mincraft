@@ -157,7 +157,7 @@ public class TodoEditScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);
@@ -356,9 +356,9 @@ public class TodoEditScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (delta > 0 && itemScrollOffset > 0) itemScrollOffset--;
-        else if (delta < 0 && itemScrollOffset < resources.size() - 5) itemScrollOffset++;
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
+        if (scrollDeltaY > 0 && itemScrollOffset > 0) itemScrollOffset--;
+        else if (scrollDeltaY < 0 && itemScrollOffset < resources.size() - 5) itemScrollOffset++;
         return true;
     }
 

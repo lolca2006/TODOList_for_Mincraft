@@ -22,10 +22,8 @@ public class TodoListWidget extends ObjectSelectionList<TodoItemWidget> {
     // Drag handle width in pixels
     public static final int DRAG_HANDLE_WIDTH = 18;
 
-    public TodoListWidget(Minecraft mc, int width, int height, int top, int bottom, int itemHeight) {
-        super(mc, width, height, top, bottom, itemHeight);
-        this.setRenderBackground(false);
-        this.setRenderTopAndBottom(false);
+    public TodoListWidget(Minecraft mc, int width, int height, int top, int itemHeight) {
+        super(mc, width, height, top, itemHeight);
     }
 
     public void refreshItems() {
@@ -62,13 +60,13 @@ public class TodoListWidget extends ObjectSelectionList<TodoItemWidget> {
 
     @Override
     protected int getScrollbarPosition() {
-        return this.x0 + this.width - 6;
+        return this.getX() + this.width - 6;
     }
 
-    public int getRowLeft() { return this.x0; }
+    public int getRowLeft() { return this.getX(); }
 
     public int getRowTop(int index) {
-        return this.y0 - (int) this.getScrollAmount() + index * this.itemHeight + this.headerHeight + 4;
+        return this.getY() - (int) this.getScrollAmount() + index * this.itemHeight + this.headerHeight + 4;
     }
 
     public int getItemHeight() { return this.itemHeight; }
@@ -150,8 +148,8 @@ public class TodoListWidget extends ObjectSelectionList<TodoItemWidget> {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+    public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderWidget(graphics, mouseX, mouseY, partialTick);
 
         int left = getRowLeft();
         int right = left + getRowWidth();
@@ -159,7 +157,7 @@ public class TodoListWidget extends ObjectSelectionList<TodoItemWidget> {
         // Draw drag handles for all entries
         for (int i = 0; i < this.children().size(); i++) {
             int rowTop = getRowTop(i);
-            if (rowTop < this.y0 - this.itemHeight || rowTop > this.y1) continue; // off screen
+            if (rowTop < this.getY() - this.itemHeight || rowTop > this.getY() + this.getHeight()) continue; // off screen
 
             boolean handleHovered = !isDragging &&
                     mouseX >= left && mouseX <= left + DRAG_HANDLE_WIDTH &&

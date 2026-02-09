@@ -95,7 +95,7 @@ public class ImportScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);
@@ -180,7 +180,7 @@ public class ImportScreen extends Screen {
 
             try {
                 var regItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                        new net.minecraft.resources.ResourceLocation(req.getItemId()));
+                        net.minecraft.resources.ResourceLocation.parse(req.getItemId()));
                 if (regItem != null) {
                     net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(regItem);
 
@@ -251,13 +251,13 @@ public class ImportScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
         if (previewResources != null) {
-            if (delta > 0 && previewScroll > 0) previewScroll--;
-            else if (delta < 0 && previewScroll < previewResources.size() - 8) previewScroll++;
+            if (scrollDeltaY > 0 && previewScroll > 0) previewScroll--;
+            else if (scrollDeltaY < 0 && previewScroll < previewResources.size() - 8) previewScroll++;
         } else {
-            if (delta > 0 && scrollOffset > 0) scrollOffset--;
-            else if (delta < 0 && scrollOffset < litematicFiles.size() - 10) scrollOffset++;
+            if (scrollDeltaY > 0 && scrollOffset > 0) scrollOffset--;
+            else if (scrollDeltaY < 0 && scrollOffset < litematicFiles.size() - 10) scrollOffset++;
         }
         return true;
     }

@@ -79,8 +79,8 @@ public class TodoScreen extends Screen {
         int listTop = panelTop + 58;
         int listBottom = panelBottom - 52;
         todoListWidget = new TodoListWidget(this.minecraft, panelWidth - 10, listBottom - listTop,
-                listTop, listBottom, 24);
-        todoListWidget.setLeftPos(panelLeft + 5);
+                listTop, 24);
+        todoListWidget.setX(panelLeft + 5);
         this.addWidget(todoListWidget);
 
         // New task input
@@ -127,7 +127,7 @@ public class TodoScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel background with gradient
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);

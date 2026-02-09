@@ -233,7 +233,7 @@ public class ResourcePickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
+        this.renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Panel
         graphics.fill(panelLeft - 2, panelTop - 2, panelRight + 2, panelBottom + 2, 0xFF333333);
@@ -452,11 +452,11 @@ public class ResourcePickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
         int cols = 9;
         int totalRows = (searchResults.size() + cols - 1) / cols;
-        if (delta > 0 && scrollOffset > 0) scrollOffset--;
-        else if (delta < 0 && scrollOffset < totalRows - 3) scrollOffset++;
+        if (scrollDeltaY > 0 && scrollOffset > 0) scrollOffset--;
+        else if (scrollDeltaY < 0 && scrollOffset < totalRows - 3) scrollOffset++;
         return true;
     }
 

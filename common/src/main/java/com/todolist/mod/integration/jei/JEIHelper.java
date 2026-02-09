@@ -71,22 +71,21 @@ public class JEIHelper {
         if (targetItem == null) return Collections.emptyList();
 
         // Search all crafting recipes for one that outputs this item
-        List<? extends net.minecraft.world.item.crafting.Recipe<?>> recipes =
-                mc.level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING);
+        var recipes = mc.level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING);
 
-        for (var recipe : recipes) {
-            ItemStack result = recipe.getResultItem(mc.level.registryAccess());
+        for (var recipeHolder : recipes) {
+            ItemStack result = recipeHolder.value().getResultItem(mc.level.registryAccess());
             if (result.is(targetItem)) {
-                return extractIngredients(recipe);
+                return extractIngredients(recipeHolder.value());
             }
         }
 
         // Also check smelting recipes
         var smeltingRecipes = mc.level.getRecipeManager().getAllRecipesFor(RecipeType.SMELTING);
-        for (var recipe : smeltingRecipes) {
-            ItemStack result = recipe.getResultItem(mc.level.registryAccess());
+        for (var recipeHolder : smeltingRecipes) {
+            ItemStack result = recipeHolder.value().getResultItem(mc.level.registryAccess());
             if (result.is(targetItem)) {
-                return extractIngredients(recipe);
+                return extractIngredients(recipeHolder.value());
             }
         }
 
