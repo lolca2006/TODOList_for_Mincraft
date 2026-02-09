@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerPlayer;
 public class TodoListModFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        FabricNetworkHandler.registerPayloadTypes();
         FabricNetworkHandler.registerServerReceivers();
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {

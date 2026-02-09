@@ -15,18 +15,18 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v3
 
       - name: Build all modules
         run: ./gradlew build
 
-      - name: Upload Forge JAR
+      - name: Upload NeoForge JAR
         uses: actions/upload-artifact@v4
         with:
-          name: TodoListMod-Forge
-          path: forge/build/libs/*[!sources].jar
+          name: TodoListMod-NeoForge
+          path: neoforge/build/libs/*[!sources].jar
 
       - name: Upload Fabric JAR
         uses: actions/upload-artifact@v4

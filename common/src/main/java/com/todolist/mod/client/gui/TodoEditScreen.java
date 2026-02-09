@@ -190,7 +190,7 @@ public class TodoEditScreen extends Screen {
             int iy = itemsY + (i - itemScrollOffset) * 18;
 
             try {
-                var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(req.getItemId()));
+                var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(req.getItemId()));
                 if (regItem != null) {
                     ItemStack stack = new ItemStack(regItem);
 
@@ -287,7 +287,7 @@ public class TodoEditScreen extends Screen {
             int hoveredIdx = getResourceIndexAt(my);
             if (hoveredIdx >= 0 && hoveredIdx < resources.size()) {
                 ResourceRequirement req = resources.get(hoveredIdx);
-                var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(req.getItemId()));
+                var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(req.getItemId()));
                 if (regItem != null) {
                     ItemStack stack = new ItemStack(regItem);
 

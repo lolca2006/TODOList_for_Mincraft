@@ -182,7 +182,7 @@ public class TodoHudOverlay {
                 for (int j = 0; j < maxIcons; j++) {
                     ResourceRequirement req = resources.get(j);
                     try {
-                        var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(req.getItemId()));
+                        var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(req.getItemId()));
                         if (regItem != null) {
                             graphics.pose().pushPose();
                             graphics.pose().scale(0.5f, 0.5f, 1.0f);

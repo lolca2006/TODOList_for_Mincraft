@@ -90,7 +90,7 @@ public class InventoryResourceOverlay {
             int haveCount = playerInv.getOrDefault(itemId, 0);
 
             try {
-                var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(itemId));
+                var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId));
                 if (regItem == null) { idx++; continue; }
 
                 ItemStack stack = new ItemStack(regItem);

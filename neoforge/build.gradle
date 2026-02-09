@@ -1,18 +1,18 @@
 plugins {
     id 'multiloader-loader'
-    id 'net.neoforged.moddev.legacyforge'
+    id 'net.neoforged.moddev'
     id 'com.modrinth.minotaur'
     id 'net.darkhax.curseforgegradle'
 }
 
-legacyForge {
-    version = "${minecraft_version}-${forge_version}"
+neoForge {
+    version = neoforge_version
 
     validateAccessTransformers = true
 
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
-        accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
+        accessTransformers.add("src/main/resources/META-INF/accesstransformer.cfg")
     }
     parchment {
         minecraftVersion = parchment_minecraft
@@ -39,14 +39,10 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 dependencies {
     compileOnly project(":common")
 
-    // JEI Forge API
+    // JEI NeoForge API
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
-    runtimeOnly "mezz.jei:jei-${minecraft_version}-forge:${jei_version}"
-}
-
-jar {
-    finalizedBy('reobfJar')
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
 
 // --- Publishing ---
@@ -55,11 +51,11 @@ modrinth {
     token = System.getenv("MODRINTH_TOKEN")
     projectId = "UNZyOOB9"
     versionNumber = "${version}"
-    versionName = "Todo List Mod ${version} (Forge)"
+    versionName = "Todo List Mod ${version} (NeoForge)"
     versionType = "release"
     uploadFile = tasks.jar
     gameVersions = [minecraft_version]
-    loaders = ["forge"]
+    loaders = ["neoforge"]
     dependencies {
         optional.project "jei"
     }
@@ -71,7 +67,7 @@ task curseforge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
     def mainFile = upload("1457776", tasks.jar)
     mainFile.releaseType = "release"
     mainFile.addGameVersion(minecraft_version)
-    mainFile.addModLoader("Forge")
+    mainFile.addModLoader("NeoForge")
     mainFile.changelog = System.getenv("CHANGELOG") ?: "See GitHub release notes."
     mainFile.changelogType = "text"
 }

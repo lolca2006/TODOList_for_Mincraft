@@ -9,9 +9,11 @@ import com.todolist.mod.common.model.TodoVisibility;
 import com.todolist.mod.platform.INetworkAccess;
 import com.todolist.mod.server.data.ServerTodoManager;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -21,100 +23,157 @@ import java.util.UUID;
 
 public class FabricNetworkHandler implements INetworkAccess {
 
-    // Channel IDs
-    private static final ResourceLocation ADD_TODO = new ResourceLocation(Constants.MOD_ID, "add_todo");
-    private static final ResourceLocation TOGGLE_TODO = new ResourceLocation(Constants.MOD_ID, "toggle_todo");
-    private static final ResourceLocation DELETE_TODO = new ResourceLocation(Constants.MOD_ID, "delete_todo");
-    private static final ResourceLocation EDIT_TODO = new ResourceLocation(Constants.MOD_ID, "edit_todo");
-    private static final ResourceLocation REORDER_TODO = new ResourceLocation(Constants.MOD_ID, "reorder_todo");
-    private static final ResourceLocation REQUEST_SYNC = new ResourceLocation(Constants.MOD_ID, "request_sync");
-    private static final ResourceLocation ASSIGN_TODO = new ResourceLocation(Constants.MOD_ID, "assign_todo");
-    private static final ResourceLocation SHARE_TODO = new ResourceLocation(Constants.MOD_ID, "share_todo");
-    private static final ResourceLocation SYNC_TODO_LIST = new ResourceLocation(Constants.MOD_ID, "sync_list");
-    private static final ResourceLocation TODO_UPDATE = new ResourceLocation(Constants.MOD_ID, "todo_update");
+    // --- Payload types ---
 
-    // --- Server-side receivers (Client → Server packets) ---
+    public record AddTodoPayload(String text, String category, TodoVisibility vis, List<ResourceRequirement> resources) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<AddTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "add_todo"));
+        public static final StreamCodec<FriendlyByteBuf, AddTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUtf(p.text); buf.writeUtf(p.category); buf.writeEnum(p.vis); writeResources(buf, p.resources); },
+                buf -> new AddTodoPayload(buf.readUtf(), buf.readUtf(), buf.readEnum(TodoVisibility.class), readResources(buf))
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record ToggleTodoPayload(UUID todoId) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ToggleTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "toggle_todo"));
+        public static final StreamCodec<FriendlyByteBuf, ToggleTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> buf.writeUUID(p.todoId), buf -> new ToggleTodoPayload(buf.readUUID())
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record DeleteTodoPayload(UUID todoId) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<DeleteTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "delete_todo"));
+        public static final StreamCodec<FriendlyByteBuf, DeleteTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> buf.writeUUID(p.todoId), buf -> new DeleteTodoPayload(buf.readUUID())
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record EditTodoPayload(UUID todoId, String text, String category, TodoVisibility vis, List<ResourceRequirement> resources) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<EditTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "edit_todo"));
+        public static final StreamCodec<FriendlyByteBuf, EditTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUUID(p.todoId); buf.writeUtf(p.text); buf.writeUtf(p.category); buf.writeEnum(p.vis); writeResources(buf, p.resources); },
+                buf -> new EditTodoPayload(buf.readUUID(), buf.readUtf(), buf.readUtf(), buf.readEnum(TodoVisibility.class), readResources(buf))
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record ReorderTodoPayload(UUID todoId, int newOrder) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ReorderTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "reorder_todo"));
+        public static final StreamCodec<FriendlyByteBuf, ReorderTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUUID(p.todoId); buf.writeInt(p.newOrder); },
+                buf -> new ReorderTodoPayload(buf.readUUID(), buf.readInt())
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record RequestSyncPayload() implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<RequestSyncPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "request_sync"));
+        public static final StreamCodec<FriendlyByteBuf, RequestSyncPayload> CODEC = StreamCodec.of(
+                (buf, p) -> {}, buf -> new RequestSyncPayload()
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record AssignTodoPayload(UUID todoId, UUID assignTo, String assignToName) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<AssignTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "assign_todo"));
+        public static final StreamCodec<FriendlyByteBuf, AssignTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUUID(p.todoId); buf.writeBoolean(p.assignTo != null); if (p.assignTo != null) { buf.writeUUID(p.assignTo); buf.writeUtf(p.assignToName != null ? p.assignToName : ""); } },
+                buf -> { UUID id = buf.readUUID(); boolean has = buf.readBoolean(); return new AssignTodoPayload(id, has ? buf.readUUID() : null, has ? buf.readUtf() : null); }
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record ShareTodoPayload(UUID todoId, TodoVisibility vis) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<ShareTodoPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "share_todo"));
+        public static final StreamCodec<FriendlyByteBuf, ShareTodoPayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUUID(p.todoId); buf.writeEnum(p.vis); },
+                buf -> new ShareTodoPayload(buf.readUUID(), buf.readEnum(TodoVisibility.class))
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record SyncTodoListPayload(String json) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<SyncTodoListPayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "sync_list"));
+        public static final StreamCodec<FriendlyByteBuf, SyncTodoListPayload> CODEC = StreamCodec.of(
+                (buf, p) -> buf.writeUtf(p.json, 262144),
+                buf -> new SyncTodoListPayload(buf.readUtf(262144))
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    public record TodoUpdatePayload(String action, String json, UUID todoId) implements CustomPacketPayload {
+        public static final CustomPacketPayload.Type<TodoUpdatePayload> TYPE = new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "todo_update"));
+        public static final StreamCodec<FriendlyByteBuf, TodoUpdatePayload> CODEC = StreamCodec.of(
+                (buf, p) -> { buf.writeUtf(p.action); buf.writeUtf(p.json, 65536); buf.writeBoolean(p.todoId != null); if (p.todoId != null) buf.writeUUID(p.todoId); },
+                buf -> { String action = buf.readUtf(); String json = buf.readUtf(65536); boolean hasId = buf.readBoolean(); return new TodoUpdatePayload(action, json, hasId ? buf.readUUID() : null); }
+        );
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    }
+
+    // --- Registration ---
+
+    public static void registerPayloadTypes() {
+        PayloadTypeRegistry.playC2S().register(AddTodoPayload.TYPE, AddTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ToggleTodoPayload.TYPE, ToggleTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(DeleteTodoPayload.TYPE, DeleteTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(EditTodoPayload.TYPE, EditTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ReorderTodoPayload.TYPE, ReorderTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RequestSyncPayload.TYPE, RequestSyncPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(AssignTodoPayload.TYPE, AssignTodoPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(ShareTodoPayload.TYPE, ShareTodoPayload.CODEC);
+
+        PayloadTypeRegistry.playS2C().register(SyncTodoListPayload.TYPE, SyncTodoListPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(TodoUpdatePayload.TYPE, TodoUpdatePayload.CODEC);
+    }
 
     public static void registerServerReceivers() {
-        ServerPlayNetworking.registerGlobalReceiver(ADD_TODO, (server, player, handler, buf, responseSender) -> {
-            String text = buf.readUtf();
-            String category = buf.readUtf();
-            TodoVisibility vis = buf.readEnum(TodoVisibility.class);
-            List<ResourceRequirement> resources = readResources(buf);
-            server.execute(() -> ServerTodoManager.addTodo(player, text, category, vis, resources));
+        ServerPlayNetworking.registerGlobalReceiver(AddTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.addTodo(context.player(), payload.text(), payload.category(), payload.vis(), payload.resources()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(TOGGLE_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            server.execute(() -> ServerTodoManager.toggleTodo(player, todoId));
+        ServerPlayNetworking.registerGlobalReceiver(ToggleTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.toggleTodo(context.player(), payload.todoId()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(DELETE_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            server.execute(() -> ServerTodoManager.deleteTodo(player, todoId));
+        ServerPlayNetworking.registerGlobalReceiver(DeleteTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.deleteTodo(context.player(), payload.todoId()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(EDIT_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            String text = buf.readUtf();
-            String category = buf.readUtf();
-            TodoVisibility vis = buf.readEnum(TodoVisibility.class);
-            List<ResourceRequirement> resources = readResources(buf);
-            server.execute(() -> ServerTodoManager.editTodo(player, todoId, text, category, vis, resources));
+        ServerPlayNetworking.registerGlobalReceiver(EditTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.editTodo(context.player(), payload.todoId(), payload.text(), payload.category(), payload.vis(), payload.resources()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(REORDER_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            int newOrder = buf.readInt();
-            server.execute(() -> ServerTodoManager.reorderTodo(player, todoId, newOrder));
+        ServerPlayNetworking.registerGlobalReceiver(ReorderTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.reorderTodo(context.player(), payload.todoId(), payload.newOrder()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(REQUEST_SYNC, (server, player, handler, buf, responseSender) -> {
-            server.execute(() -> ServerTodoManager.syncToPlayer(player));
+        ServerPlayNetworking.registerGlobalReceiver(RequestSyncPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.syncToPlayer(context.player()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(ASSIGN_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            boolean hasAssignee = buf.readBoolean();
-            UUID assignTo = hasAssignee ? buf.readUUID() : null;
-            String name = hasAssignee ? buf.readUtf() : null;
-            server.execute(() -> ServerTodoManager.assignTodo(player, todoId, assignTo, name));
+        ServerPlayNetworking.registerGlobalReceiver(AssignTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.assignTodo(context.player(), payload.todoId(), payload.assignTo(), payload.assignToName()));
         });
-
-        ServerPlayNetworking.registerGlobalReceiver(SHARE_TODO, (server, player, handler, buf, responseSender) -> {
-            UUID todoId = buf.readUUID();
-            TodoVisibility vis = buf.readEnum(TodoVisibility.class);
-            server.execute(() -> ServerTodoManager.setVisibility(player, todoId, vis));
+        ServerPlayNetworking.registerGlobalReceiver(ShareTodoPayload.TYPE, (payload, context) -> {
+            context.player().server.execute(() -> ServerTodoManager.setVisibility(context.player(), payload.todoId(), payload.vis()));
         });
     }
 
-    // --- Client-side receivers (Server → Client packets) ---
-
     public static void registerClientReceivers() {
-        ClientPlayNetworking.registerGlobalReceiver(SYNC_TODO_LIST, (client, handler, buf, responseSender) -> {
-            String json = buf.readUtf(262144);
-            client.execute(() -> {
-                List<TodoItem> items = TodoSerializer.itemsFromJson(json);
+        ClientPlayNetworking.registerGlobalReceiver(SyncTodoListPayload.TYPE, (payload, context) -> {
+            context.client().execute(() -> {
+                List<TodoItem> items = TodoSerializer.itemsFromJson(payload.json());
                 ClientTodoManager.receiveSync(items);
             });
         });
-
-        ClientPlayNetworking.registerGlobalReceiver(TODO_UPDATE, (client, handler, buf, responseSender) -> {
-            String action = buf.readUtf();
-            String json = buf.readUtf(65536);
-            boolean hasId = buf.readBoolean();
-            UUID todoId = hasId ? buf.readUUID() : null;
-            client.execute(() -> {
-                switch (action) {
+        ClientPlayNetworking.registerGlobalReceiver(TodoUpdatePayload.TYPE, (payload, context) -> {
+            context.client().execute(() -> {
+                switch (payload.action()) {
                     case "ADD", "UPDATE" -> {
-                        List<TodoItem> items = TodoSerializer.itemsFromJson(json);
+                        List<TodoItem> items = TodoSerializer.itemsFromJson(payload.json());
                         if (!items.isEmpty()) {
                             ClientTodoManager.receiveUpdate(items.get(0));
                         }
                     }
                     case "REMOVE" -> {
-                        if (todoId != null) {
-                            ClientTodoManager.receiveRemove(todoId);
+                        if (payload.todoId() != null) {
+                            ClientTodoManager.receiveRemove(payload.todoId());
                         }
                     }
                 }
@@ -126,94 +185,60 @@ public class FabricNetworkHandler implements INetworkAccess {
 
     @Override
     public void sendAddTodo(String text, String category, TodoVisibility vis, List<ResourceRequirement> resources) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUtf(text);
-        buf.writeUtf(category);
-        buf.writeEnum(vis);
-        writeResources(buf, resources);
-        ClientPlayNetworking.send(ADD_TODO, buf);
+        ClientPlayNetworking.send(new AddTodoPayload(text, category, vis, resources != null ? resources : List.of()));
     }
 
     @Override
     public void sendToggleTodo(UUID todoId) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        ClientPlayNetworking.send(TOGGLE_TODO, buf);
+        ClientPlayNetworking.send(new ToggleTodoPayload(todoId));
     }
 
     @Override
     public void sendDeleteTodo(UUID todoId) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        ClientPlayNetworking.send(DELETE_TODO, buf);
+        ClientPlayNetworking.send(new DeleteTodoPayload(todoId));
     }
 
     @Override
     public void sendEditTodo(UUID todoId, String text, String cat, TodoVisibility vis, List<ResourceRequirement> res) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        buf.writeUtf(text);
-        buf.writeUtf(cat);
-        buf.writeEnum(vis);
-        writeResources(buf, res);
-        ClientPlayNetworking.send(EDIT_TODO, buf);
+        ClientPlayNetworking.send(new EditTodoPayload(todoId, text, cat, vis, res != null ? res : List.of()));
     }
 
     @Override
     public void sendReorderTodo(UUID todoId, int newOrder) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        buf.writeInt(newOrder);
-        ClientPlayNetworking.send(REORDER_TODO, buf);
+        ClientPlayNetworking.send(new ReorderTodoPayload(todoId, newOrder));
     }
 
     @Override
     public void sendRequestSync() {
-        ClientPlayNetworking.send(REQUEST_SYNC, PacketByteBufs.create());
+        ClientPlayNetworking.send(new RequestSyncPayload());
     }
 
     @Override
     public void sendAssignTodo(UUID todoId, UUID assignTo, String assignToName) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        buf.writeBoolean(assignTo != null);
-        if (assignTo != null) {
-            buf.writeUUID(assignTo);
-            buf.writeUtf(assignToName != null ? assignToName : "");
-        }
-        ClientPlayNetworking.send(ASSIGN_TODO, buf);
+        ClientPlayNetworking.send(new AssignTodoPayload(todoId, assignTo, assignToName));
     }
 
     @Override
     public void sendShareTodo(UUID todoId, TodoVisibility vis) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUUID(todoId);
-        buf.writeEnum(vis);
-        ClientPlayNetworking.send(SHARE_TODO, buf);
+        ClientPlayNetworking.send(new ShareTodoPayload(todoId, vis));
     }
 
     // --- INetworkAccess: Server → Client ---
 
     @Override
     public void sendSyncToPlayer(ServerPlayer player, List<TodoItem> items) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUtf(TodoSerializer.itemsToJson(items), 262144);
-        ServerPlayNetworking.send(player, SYNC_TODO_LIST, buf);
+        ServerPlayNetworking.send(player, new SyncTodoListPayload(TodoSerializer.itemsToJson(items)));
     }
 
     @Override
     public void sendUpdateToAll(String action, TodoItem item) {
         var server = ServerTodoManager.getServer();
         if (server == null) return;
-
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUtf(action);
-        buf.writeUtf(item != null ? TodoSerializer.itemsToJson(List.of(item)) : "[]", 65536);
-        buf.writeBoolean(item != null);
-        if (item != null) buf.writeUUID(item.getId());
-
+        String json = item != null ? TodoSerializer.itemsToJson(List.of(item)) : "[]";
+        UUID id = item != null ? item.getId() : null;
+        TodoUpdatePayload payload = new TodoUpdatePayload(action, json, id);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            ServerPlayNetworking.send(p, TODO_UPDATE, PacketByteBufs.copy(buf));
+            ServerPlayNetworking.send(p, payload);
         }
     }
 
@@ -221,17 +246,13 @@ public class FabricNetworkHandler implements INetworkAccess {
     public void sendRemoveToAll(UUID todoId) {
         var server = ServerTodoManager.getServer();
         if (server == null) return;
-
-        FriendlyByteBuf buf = PacketByteBufs.create();
-        buf.writeUtf("REMOVE");
-        buf.writeUtf("[]", 65536);
-        buf.writeBoolean(true);
-        buf.writeUUID(todoId);
-
+        TodoUpdatePayload payload = new TodoUpdatePayload("REMOVE", "[]", todoId);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            ServerPlayNetworking.send(p, TODO_UPDATE, PacketByteBufs.copy(buf));
+            ServerPlayNetworking.send(p, payload);
         }
     }
+
+    // --- Helpers ---
 
     private static void writeResources(FriendlyByteBuf buf, List<ResourceRequirement> resources) {
         if (resources == null) resources = List.of();
@@ -247,10 +268,7 @@ public class FabricNetworkHandler implements INetworkAccess {
         int size = buf.readInt();
         List<ResourceRequirement> resources = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            String itemId = buf.readUtf();
-            int count = buf.readInt();
-            boolean collected = buf.readBoolean();
-            resources.add(new ResourceRequirement(itemId, count, collected));
+            resources.add(new ResourceRequirement(buf.readUtf(), buf.readInt(), buf.readBoolean()));
         }
         return resources;
     }

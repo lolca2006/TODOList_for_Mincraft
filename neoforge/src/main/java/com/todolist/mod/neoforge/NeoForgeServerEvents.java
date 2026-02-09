@@ -1,16 +1,18 @@
-package com.todolist.mod.forge;
+package com.todolist.mod.neoforge;
 
 import com.todolist.mod.Constants;
 import com.todolist.mod.server.data.ServerTodoManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
-@Mod.EventBusSubscriber(modid = Constants.MOD_ID)
-public class ForgeServerEvents {
+/**
+ * Server lifecycle event handlers for NeoForge 1.21.1.
+ * Manages ServerTodoManager initialization, shutdown, and player sync on join.
+ */
+public class NeoForgeServerEvents {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {

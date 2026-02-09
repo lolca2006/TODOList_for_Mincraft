@@ -48,7 +48,7 @@ public class TodoListModFabricClient implements ClientModInitializer {
         });
 
         // HUD overlay rendering
-        HudRenderCallback.EVENT.register((graphics, tickDelta) -> {
+        HudRenderCallback.EVENT.register((graphics, renderTickCounter) -> {
             Minecraft mc = Minecraft.getInstance();
             TodoHudOverlay.render(graphics, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         });

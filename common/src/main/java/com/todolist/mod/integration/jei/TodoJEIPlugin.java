@@ -14,7 +14,7 @@ public class TodoJEIPlugin implements IModPlugin {
 
     @Override
     public ResourceLocation getPluginUid() {
-        return new ResourceLocation(Constants.MOD_ID, "jei_plugin");
+        return ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "jei_plugin");
     }
 
     @Override

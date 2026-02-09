@@ -1,12 +1,12 @@
 plugins {
     id 'multiloader-common'
-    id 'net.neoforged.moddev.legacyforge'
+    id 'net.neoforged.moddev'
 }
 
-legacyForge {
-    mcpVersion = minecraft_version
+neoForge {
+    neoFormVersion = minecraft_version
     if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
-        accessTransformers = ["src/main/resources/META-INF/accesstransformer.cfg"]
+        accessTransformers.add("src/main/resources/META-INF/accesstransformer.cfg")
     }
     parchment {
         minecraftVersion = parchment_minecraft
@@ -18,7 +18,7 @@ dependencies {
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 
-    // JEI Common API (compileOnly - works on both Forge and Fabric)
+    // JEI Common API (compileOnly - works on both NeoForge and Fabric)
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
 }
 

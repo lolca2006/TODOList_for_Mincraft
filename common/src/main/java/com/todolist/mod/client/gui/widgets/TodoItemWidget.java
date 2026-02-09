@@ -66,7 +66,7 @@ public class TodoItemWidget extends ObjectSelectionList.Entry<TodoItemWidget> {
             for (int i = 0; i < maxIcons; i++) {
                 ResourceRequirement req = resources.get(i);
                 try {
-                    var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(req.getItemId()));
+                    var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(req.getItemId()));
                     if (regItem != null) {
                         graphics.pose().pushPose();
                         graphics.pose().scale(0.5f, 0.5f, 1.0f);

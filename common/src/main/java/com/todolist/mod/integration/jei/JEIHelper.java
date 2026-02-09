@@ -67,7 +67,7 @@ public class JEIHelper {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return Collections.emptyList();
 
-        var targetItem = BuiltInRegistries.ITEM.get(new ResourceLocation(targetItemId));
+        var targetItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(targetItemId));
         if (targetItem == null) return Collections.emptyList();
 
         // Search all crafting recipes for one that outputs this item

@@ -1,31 +1,31 @@
-package com.todolist.mod.forge;
+package com.todolist.mod.neoforge;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
-public class ForgeConfigHandler {
-    public static final ForgeConfigSpec CLIENT_SPEC;
+public class NeoForgeConfigHandler {
+    public static final ModConfigSpec CLIENT_SPEC;
     public static final ClientConfig CLIENT;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         CLIENT = new ClientConfig(builder);
         CLIENT_SPEC = builder.build();
     }
 
     public static class ClientConfig {
-        public final ForgeConfigSpec.IntValue hudX;
-        public final ForgeConfigSpec.IntValue hudY;
-        public final ForgeConfigSpec.DoubleValue hudOpacity;
-        public final ForgeConfigSpec.DoubleValue hudScale;
-        public final ForgeConfigSpec.BooleanValue hudVisible;
-        public final ForgeConfigSpec.IntValue hudMaxItems;
-        public final ForgeConfigSpec.BooleanValue showCompletedInHud;
-        public final ForgeConfigSpec.BooleanValue playCompletionSound;
-        public final ForgeConfigSpec.ConfigValue<String> hudActiveCategory;
-        public final ForgeConfigSpec.BooleanValue inventoryOverlayEnabled;
-        public final ForgeConfigSpec.IntValue inventoryOverlayMaxItems;
+        public final ModConfigSpec.IntValue hudX;
+        public final ModConfigSpec.IntValue hudY;
+        public final ModConfigSpec.DoubleValue hudOpacity;
+        public final ModConfigSpec.DoubleValue hudScale;
+        public final ModConfigSpec.BooleanValue hudVisible;
+        public final ModConfigSpec.IntValue hudMaxItems;
+        public final ModConfigSpec.BooleanValue showCompletedInHud;
+        public final ModConfigSpec.BooleanValue playCompletionSound;
+        public final ModConfigSpec.ConfigValue<String> hudActiveCategory;
+        public final ModConfigSpec.BooleanValue inventoryOverlayEnabled;
+        public final ModConfigSpec.IntValue inventoryOverlayMaxItems;
 
-        ClientConfig(ForgeConfigSpec.Builder builder) {
+        ClientConfig(ModConfigSpec.Builder builder) {
             builder.comment("HUD Overlay Settings").push("hud");
 
             hudX = builder

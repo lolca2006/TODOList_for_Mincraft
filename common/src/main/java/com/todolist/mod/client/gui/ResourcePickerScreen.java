@@ -202,7 +202,7 @@ public class ResourcePickerScreen extends Screen {
 
     private void addBlockGroup(BlockGroup group) {
         int count = getCount();
-        ResourceLocation tagLoc = new ResourceLocation(group.getTagId());
+        ResourceLocation tagLoc = ResourceLocation.parse(group.getTagId());
         TagKey<Item> tagKey = TagKey.create(net.minecraft.core.registries.Registries.ITEM, tagLoc);
 
         int added = 0;
@@ -299,7 +299,7 @@ public class ResourcePickerScreen extends Screen {
         for (int i = 0; i < Math.min(pendingResources.size(), maxVisible); i++) {
             ResourceRequirement req = pendingResources.get(i);
             try {
-                var regItem = BuiltInRegistries.ITEM.get(new ResourceLocation(req.getItemId()));
+                var regItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(req.getItemId()));
                 if (regItem != null) {
                     ItemStack stack = new ItemStack(regItem);
                     graphics.renderItem(stack, gridLeft, pendingY);
