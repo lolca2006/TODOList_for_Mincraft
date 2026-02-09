@@ -20,7 +20,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
 
       - name: Build all modules
-        run: ./gradlew build
+        run: chmod +x gradlew && ./gradlew build
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -32,12 +32,12 @@ jobs:
 
       - name: Publish to Modrinth
         if: env.MODRINTH_TOKEN != ''
-        run: ./gradlew neoforge:modrinth fabric:modrinth
+        run: chmod +x gradlew && ./gradlew neoforge:modrinth fabric:modrinth
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
 
       - name: Publish to CurseForge
         if: env.CURSEFORGE_TOKEN != ''
-        run: ./gradlew neoforge:curseforge fabric:curseforge
+        run: chmod +x gradlew && ./gradlew neoforge:curseforge fabric:curseforge
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
