@@ -46,7 +46,7 @@ loom {
 
 modrinth {
     token = System.getenv("MODRINTH_TOKEN")
-    projectId = "todolistmod"
+    projectId = "UNZyOOB9"
     versionNumber = "${version}"
     versionName = "Todo List Mod ${version} (Fabric)"
     versionType = "release"
@@ -62,7 +62,7 @@ modrinth {
 
 task curseforge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
     apiToken = System.getenv("CURSEFORGE_TOKEN") ?: "none"
-    def mainFile = upload(System.getenv("CURSEFORGE_PROJECT_ID") ?: "0", tasks.remapJar)
+    def mainFile = upload("1457776", tasks.remapJar)
     mainFile.releaseType = "release"
     mainFile.addGameVersion(minecraft_version)
     mainFile.addModLoader("Fabric")

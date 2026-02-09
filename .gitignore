@@ -1,20 +1,46 @@
-# Build outputs
-TodoListMod/build/
-TodoListMod/.gradle/
-TodoListMod/run/
+# Java
+*.class
+*.jar
+*.war
+*.ear
 
-# IDE
-.idea/
+# Eclipse
+bin/
+*.launch
+.settings/
+.metadata
+.classpath
+.project
+
+# IntelliJ IDEA
+out/
+*.ipr
+*.iws
 *.iml
+.idea/
+
+# VS Code
 .vscode/
+
+# Gradle
+build/
+.gradle/
+buildSrc/build/
+
+# Minecraft
+run/
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 nul
-
-# Temp files
-c
 
 # Claude
 .claude/
+
+# Docker dev environment (not part of the mod)
+Dockerfile
+docker-compose.yml
+.dockerignore
