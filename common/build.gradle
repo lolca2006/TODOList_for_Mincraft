@@ -4,7 +4,7 @@ plugins {
 }
 
 neoForge {
-    neoFormVersion = minecraft_version
+    neoFormVersion = neoform_version
     if (file("src/main/resources/META-INF/accesstransformer.cfg").exists()) {
         accessTransformers.add("src/main/resources/META-INF/accesstransformer.cfg")
     }
